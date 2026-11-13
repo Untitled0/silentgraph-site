@@ -25,6 +25,10 @@
 
 html { scroll-behavior: smooth; }
 
+/* last-resort guard: the page itself never scrolls sideways
+   (real per-component fixes live with each component below) */
+html, body { overflow-x: hidden; overflow-x: clip; }
+
 body {
   background-color: var(--bg);
   /* dot-grid texture across the whole page */
@@ -92,8 +96,109 @@ a { color: inherit; }
   color: var(--ink-2);
 }
 .site-nav a:hover { color: var(--accent); }
-@media (max-width: 640px) {
-  .site-nav a.nav-sub { display: none; }
+
+/* hamburger toggle — shown on small screens only */
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  padding: 9px 8px;
+  background: transparent;
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+.nav-toggle span { display: block; height: 2px; background: var(--ink); }
+.nav-toggle:hover span { background: var(--accent); }
+
+/* slide-in mobile menu (dark panel, mono labels — same voice as the footer) */
+.mobile-nav-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 11, 0.45);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.28s ease, visibility 0s linear 0.28s;
+  z-index: 40;
+}
+.mobile-nav {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  height: 100dvh;
+  width: min(320px, 84vw);
+  background: #101010;
+  color: #ececea;
+  z-index: 50;
+  padding: 18px 22px 28px;
+  transform: translateX(102%);
+  visibility: hidden;
+  transition: transform 0.32s ease, visibility 0s linear 0.32s;
+  display: flex;
+  flex-direction: column;
+}
+body.nav-open .mobile-nav {
+  transform: translateX(0);
+  visibility: visible;
+  transition: transform 0.32s ease;
+}
+body.nav-open .mobile-nav-backdrop {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.28s ease;
+}
+body.nav-open { overflow: hidden; }
+.mobile-nav-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line-dark);
+  margin-bottom: 10px;
+}
+.mobile-nav-head .mono { color: #9a9a96; }
+.mobile-nav-close {
+  background: transparent;
+  border: 1px solid var(--line-dark);
+  color: #ececea;
+  width: 38px;
+  height: 38px;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.mobile-nav-close:hover { color: var(--accent); border-color: var(--accent); }
+.mobile-nav a {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 15px 2px;
+  border-bottom: 1px solid var(--line-dark);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.mobile-nav a:hover { color: var(--accent); }
+.mobile-nav a .no {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 11px;
+  color: #9a9a96;
+  letter-spacing: 0.12em;
+}
+
+@media (max-width: 760px) {
+  .site-nav { display: none; }
+  .nav-toggle { display: inline-flex; }
+}
+@media (min-width: 761px) {
+  .mobile-nav, .mobile-nav-backdrop { display: none; }
 }
 
 /* ---------- hero (dark panel, neon dot-matrix main visual) ---------- */
@@ -122,7 +227,9 @@ a { color: inherit; }
 .dotmark-figure .dotmark { display: none; }
 .dotmark-figure .dotmark.dotmark-ready { display: block; }
 .dotmark-figure:has(.dotmark-ready) img.hero-fallback { display: none; }
-.dotmark-svg { display: block; width: 100%; height: auto; overflow: visible; }
+/* overflow hidden: the neon drop-shadow must not paint outside the
+   panel and widen the page on small screens */
+.dotmark-svg { display: block; width: 100%; height: auto; overflow: hidden; }
 .dotmark-svg .glyph-dot { opacity: 0.06; transition: opacity 0.55s ease; }
 .dotmark-svg.lit .glyph-dot { opacity: 1; }
 /* neon glow on the lit glyph layer */
@@ -207,8 +314,11 @@ section.block { padding: clamp(52px, 8vw, 96px) 0 0; }
 .section-head .jp { color: var(--mut); font-size: 13px; }
 .section-intro { color: var(--ink-2); max-width: 44em; margin: 16px 0 22px; }
 
-/* ledger table */
+/* ledger table — wrapped so a too-wide ledger scrolls inside its own
+   box instead of pushing the page sideways */
+.ledger-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .ledger { border-top: 1px solid var(--line); }
+.ledger .lrow > span { min-width: 0; }
 .ledger .lrow {
   display: grid;
   grid-template-columns: 118px 1.6fr 1.1fr 150px;
